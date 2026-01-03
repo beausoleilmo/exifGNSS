@@ -12,35 +12,124 @@ library(DT)
 
 # UI
 ui <- fluidPage(
-  titlePanel("Geotag Photos with GPX"),
+  # Main title of the Shiny app
+  titlePanel("Add geographical coordinates to photos' metadata"),
+
+  # Side bar
   sidebarLayout(
-    sidebarPanel(
+    sidebarPanel = sidebarPanel(
+      # Testing different tags
+      # tags$cite('test1'),
+      # tags$caption('test2'),
+      # tags$code('test3'),
+      # tags$pre('test4'),
+      # tags$article('test5'),
+      # tags$abbr('test6'),
+      # tags$address('test7'),
+      # tags$view('test8'),
+      # tags$nav('test9'),
+      # tags$u('test10'),
+      # tags$strong('test11'),
+
+
+      h3("Procedure"),
+      tags$ol(
+        tags$li("Select a folder with photos"),
+        tags$li("Choose the GPX file (remove spaces in the file name before uploading)."),
+        tags$li(HTML("Install exiftool <i>before</i> running the 'Modify EXIF' button."))
+      ),
+
+      # Add horizontal line
+      HTML("<hr style=\"border: 1px solid black; width: 100%;\">"),
+
+
+
+      # Big title
+      h3("File inputs"),
+
+      # Folder with photos
       h4("Photo Folder"),
-      shinyDirButton("dir", "Select a folder", "Please select a folder"),
-      verbatimTextOutput("dir_path"),
+      shinyDirButton(id = "dir",
+                     label = "Select a folder",
+                     title = "Please select a folder"),
+      verbatimTextOutput(outputId = "dir_path"),
+
       br(),
-      fileInput("gpx_file", "Choose GPX File",
+
+      # GPX file
+      fileInput(inputId = "gpx_file",
+                label = "Choose GPX File",
                 multiple = FALSE,
                 accept = c(".gpx")),
-      actionButton("run_map", "Visualize GPX"),
+
+      # Add horizontal line
+      HTML("<hr style=\"border: 1px solid black; width: 100%;\">"),
+
+      # Big title
+      h3("Take action"),
+
+      # Map the GPX file
+      h4("Map the GPX data"),
+      actionButton(inputId = "run_map",
+                   label = "Visualize GPX"),
+      p("Creates a map with the provided GPX data."),
+
       br(),
-      br(),
-      actionButton("modify_exif", "Modify EXIF")
+
+      # Run command
+      h4("Run exiftool"),
+      actionButton(inputId = "modify_exif",
+                   label = "Modify EXIF"),
+      p("Use exiftool to modify the photos' metadata.")
     ),
     mainPanel(
-      h4("Exiftool Output"),
-      verbatimTextOutput("exif_output"),
-      h4("Photo EXIF Data"),
-      dataTableOutput("photo_table"),
-      h4("Map Output"),
-      leaflet::leafletOutput("map"),
-      textOutput("success_message")
-    )
-  )
-)
+      # Make 2 tabs
+      tabsetPanel(
+        id = "main_tabs", # ID to refer
+        # Table
+        tabPanel(title = "Photo EXIF metadata table",
+                 value = "photo_table_viz_tab",
+                 dataTableOutput("photo_table")),
+        # Map
+        tabPanel(title = "Map Output",
+                 value = "map_gpx_tab",
+                 leaflet::leafletOutput("map"),
+                 # Success message
+                 textOutput("success_message")
+        ),
+        # Exif output
+        tabPanel(title = "exiftool log",
+                 value = 'exiftool_output_tab',
+                 h4("exiftool command: "),
+                 # Format the code as 'code box'
+                 tags$pre(textOutput("exif_cmd")),
+                 h4("exiftool ouput: "),
+                 # Prints the output of exiftool
+                 verbatimTextOutput("exif_output")
+        )
+      ) # End tabsetPanel
+    ) # End mainPanel
+  ) # End sidebarLayout
+) # end fluidpage
 
 # Server
 server <- function(input, output, session) {
+
+
+  # Triggered when button is clicked
+  ## For GPX loading
+  observeEvent(input$dir, {
+    updateTabsetPanel(session, "main_tabs", selected = "photo_table_viz_tab")
+  })
+  ## For map
+  observeEvent(input$run_map, {
+    updateTabsetPanel(session, "main_tabs", selected = "map_gpx_tab")
+  })
+  ## For modification EXIF
+  observeEvent(input$modify_exif, {
+    updateTabsetPanel(session, "main_tabs", selected = "exiftool_output_tab")
+  })
+
 
   volumes <- getVolumes()()
 
@@ -79,7 +168,8 @@ server <- function(input, output, session) {
       })
 
       output$success_message <- renderText({
-        "Success! The GPX track has been visualized."
+        ''
+        # "Success! The GPX track has been visualized."
       })
 
     }, error = function(e) {
@@ -118,7 +208,9 @@ server <- function(input, output, session) {
 
     exiftool_cmd <- sprintf("exiftool -geotag '%s' '%s'", path2GPX, path2photos)
 
-    print(exiftool_cmd)
+    output$exif_cmd <- renderText({
+      exiftool_cmd
+    })
 
     tryCatch({
       exif_output <- system(exiftool_cmd, intern = TRUE, ignore.stderr = FALSE)
@@ -166,11 +258,12 @@ server <- function(input, output, session) {
       dplyr::select(file, model,
                     # copyright,
                     time = timestamp,
-                    longitude, latitude,
-                    exp_t = exposure_time,
-                    f = f_stop,
-                    iso = iso_speed,
-                    f_lght = focal_length_35mm
+                    longitude,
+                    latitude#,
+                    # exp_t = exposure_time,
+                    # f = f_stop,
+                    # iso = iso_speed,
+                    # f_lght = focal_length_35mm
       )
 
     return(photos)
