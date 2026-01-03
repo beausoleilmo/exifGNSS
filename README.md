@@ -2,6 +2,14 @@
 
 From a folder containing photos and a `GPX` file, use `exiftool` to update the photos longitude and latitude. 
 
+## setup 
+
+Simply run the Shinyapp 
+
+```
+runApp('R/run_app.R')
+```
+
 ## Requirements 
 
 You need to install [`exiftool`](https://exiftool.org/install.html). 
